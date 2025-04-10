@@ -1,0 +1,12 @@
+[project]
+name = "mcp-rag-control"
+version = "0.1.0"
+description = "Map-based control architecture for agentic RAG systems PoC"
+requires-python = ">=3.9"
+
+[tool.setuptools.packages.find]
+# Finds packages automatically in the current directory (.)
+where = ["."]
+
+# If you prefer an src layout later:
+# where = ["src"] 

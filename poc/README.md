@@ -21,20 +21,24 @@
     *   독립 실행형 Python 스크립트로 실행 가능.
 *   **독립성:** 외부 MCP나 복잡한 서버 설정 없이 RAG의 핵심 로직을 독립적으로 검증합니다.
 
-### PoC 2: 벡터 검색 MCP 연동 (FAISS)
+### PoC 2: 벡터 검색 MCP 연동 (ChromaDB 서버 모드)
 
-*   **목표:** FAISS 서버(Docker 사용 권장)를 구축하고, 간단한 API(Flask/FastAPI)를 통해 벡터 검색 기능을 제공하는 '벡터 검색 MCP'를 구현합니다. PoC 1의 로컬 검색 로직을 이 MCP 호출로 대체하여, 분리된 벡터 저장소와의 연동을 검증합니다.
-*   **기술:** Python, FAISS, Docker, Flask/FastAPI, PoC 1 결과물 (클라이언트 로직 수정).
+*   **목표:** 로컬에서 실행되는 ChromaDB 서버(`chromadb run`)를 별도의 프로세스로 띄우고, 간단한 API(FastAPI)를 통해 벡터 추가/검색 기능을 제공하는 '벡터 검색 MCP'를 구현합니다. PoC 1의 로컬 벡터 저장소 접근 로직을 이 MCP API 호출로 대체하여, 분리된 벡터 저장소 서버와의 연동을 검증합니다.
+*   **기술:** Python, ChromaDB (서버 모드 및 HttpClient), FastAPI, Uvicorn, PoC 1 결과물 (문서 로딩/임베딩 로직 재사용, 쿼리 로직 수정).
 *   **주요 작업:**
-    *   Docker 기반 FAISS 서버 설정 및 실행.
-    *   벡터 추가, 검색 등의 기능을 제공하는 MCP API 엔드포인트 구현 (명확한 입출력 형식 정의 - 예: JSON).
-    *   PoC 1의 RAG 스크립트에서 로컬 벡터 저장소 대신 MCP API를 호출하도록 수정.
-    *   API 연동 및 검색 결과 검증.
+    *   별도 터미널에서 ChromaDB 서버 실행 (`chromadb run --path ./poc/vector_mcp/chroma_data --port 8000`).
+    *   FastAPI를 사용하여 MCP 서버 구현 (`poc/vector_mcp/mcp_server.py`). 이 서버는 `chromadb.HttpClient`를 통해 실행 중인 ChromaDB 서버와 통신.
+    *   벡터 추가(`/add`), 검색(`/query`) API 엔드포인트 구현 (명확한 입출력 형식 정의 - Pydantic 모델 사용).
+    *   PoC 1 기반의 RAG 클라이언트 스크립트 수정/작성 (`poc/vector_mcp/client_script.py`).
+        *   임베딩된 데이터를 MCP 서버의 `/add` API를 통해 전송하여 인덱싱.
+        *   쿼리 임베딩을 MCP 서버의 `/query` API로 전송하고 결과 ID 수신.
+        *   수신된 ID를 바탕으로 클라이언트 측에서 원본 텍스트 조회 및 컨텍스트 구성.
+    *   MCP API 연동 및 전체 RAG 흐름 검증.
 *   **성공 기준:**
-    *   독립적으로 실행되는 벡터 검색 MCP 서버.
-    *   MCP API를 통해 벡터 검색 요청(예: top-k 유사 벡터 검색)이 성공하고, 예상되는 형식의 결과를 반환 (예: 100ms 이내 응답).
-    *   수정된 RAG 클라이언트가 MCP를 통해 검색을 성공적으로 수행.
-*   **독립성:** RAG 파이프라인과 벡터 저장소의 물리적/논리적 분리를 검증하고, 표준화된 MCP 인터페이스를 통한 상호작용을 시험합니다.
+    *   독립적으로 실행되는 벡터 검색 MCP API 서버.
+    *   MCP API를 통해 벡터 추가 및 검색 요청이 성공하고, 예상되는 형식의 결과를 반환.
+    *   수정된 RAG 클라이언트가 MCP를 통해 검색을 성공적으로 수행하고 최종 응답 생성.
+*   **독립성:** RAG 파이프라인과 벡터 저장소 서버(ChromaDB)의 프로세스 분리를 검증하고, 표준화된 MCP 인터페이스를 통한 상호작용을 시험합니다.
 
 ### PoC 3: 지식 그래프 MCP 연동 (Neo4j)
 

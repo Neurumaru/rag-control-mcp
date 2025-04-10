@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+chromadb
+httpx # For client script
+pydantic
+
+# Dependencies from PoC 1 needed for client script
+llama-index-llms-ollama
+llama-index-embeddings-huggingface
+sentence-transformers
+llama-index-core # Added for core LlamaIndex functionalities if client uses them directly 

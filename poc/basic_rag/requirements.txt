@@ -1,0 +1,10 @@
+llama-index
+llama-index-llms-ollama
+llama-index-embeddings-huggingface
+llama-index-vector-stores-chroma
+sentence-transformers
+chromadb
+
+# Testing
+pytest
+pytest-mock 

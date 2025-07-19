@@ -44,14 +44,30 @@
 │   │       ├── config.py        # 설정 관리
 │   │       └── logger.py        # 로깅
 │   │
+├── web_interface/               # Streamlit 웹 인터페이스
+│   ├── app.py                   # 메인 Streamlit 앱
+│   ├── pages/                   # 페이지 모듈
+│   │   ├── __init__.py
+│   │   ├── home.py              # 홈 대시보드
+│   │   ├── modules.py           # 모듈 관리 페이지
+│   │   ├── pipelines.py         # 파이프라인 관리 페이지
+│   │   ├── rag_test.py          # RAG 테스트 페이지
+│   │   └── settings.py          # 설정 페이지
+│   └── utils/                   # 웹 인터페이스 유틸리티
+│       ├── __init__.py
+│       ├── api_client.py        # API 클라이언트
+│       └── ui_components.py     # 재사용 가능한 UI 컴포넌트
+│
 ├── tests/                       # 테스트
 │   ├── __init__.py
 │   ├── api/                     # API 테스트
 │   ├── controller/              # 컨트롤러 테스트
 │   ├── registry/                # 등록 저장소 테스트
-│   └── adapters/                # 어댑터 테스트
+│   ├── adapters/                # 어댑터 테스트
+│   └── web_interface/           # 웹 인터페이스 테스트
 │
 └── examples/                    # 예제 코드
     ├── basic_rag/               # 기본 RAG 파이프라인 예제
-    └── vector_mcp/              # 벡터 MCP 예제
+    ├── vector_mcp/              # 벡터 MCP 예제
+    └── web_demo/                # 웹 인터페이스 데모
 ```

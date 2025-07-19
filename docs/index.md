@@ -11,6 +11,8 @@ MCP-RAG-Control은 에이전트 기반 RAG(Retrieval-Augmented Generation) 시�
 5. [모델 설계](models_design.md) - 데이터 모델 및 스키마 정의
 6. [어댑터 설계](adapters_design.md) - MCP 어댑터 구현
 7. [컨트롤러 설계](controller_design.md) - LangGraph 기반 컨트롤러
+8. [Streamlit 웹 인터페이스](streamlit_interface_design.md) - 웹 GUI 설계
+9. [웹 인터페이스 사용 가이드](web_interface_usage.md) - 웹 GUI 사용법
 
 ## 빠른 시작
 
@@ -29,10 +31,20 @@ MCP-RAG-Control은 에이전트 기반 RAG(Retrieval-Augmented Generation) 시�
    pip install -e ".[dev]"
    ```
 
-3. **서버 실행**
+3. **백엔드 API 서버 실행**
    ```bash
-   uvicorn mcp_rag_control.api.app:app --reload
+   uvicorn mcp_rag_control.api.app:app --reload --port 8000
    ```
+
+4. **웹 인터페이스 실행** (새 터미널)
+   ```bash
+   cd web_interface
+   streamlit run app.py --server.port 8501
+   ```
+
+5. **웹 브라우저에서 접속**
+   - API 문서: http://localhost:8000/docs
+   - 웹 인터페이스: http://localhost:8501
 
 ## 개발 워크플로우
 

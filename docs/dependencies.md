@@ -20,6 +20,8 @@
 - **LangChain**: LLM 애플리케이션 프레임워크
 - **LangGraph**: 에이전트 워크플로우 관리
 - **Sentence-Transformers**: 텍스트 임베딩 생성
+- **MCP-Python**: Model Context Protocol 클라이언트/서버 SDK
+- **LangChain-MCP-Adapters**: LangChain과 MCP 통합 라이브러리
 
 ### 유틸리티
 - **Python-dotenv**: 환경 변수 관리
@@ -82,11 +84,13 @@ dependencies = [
     "faiss-cpu>=1.7.4",
     "langchain>=0.1.0",
     "langgraph>=0.0.15",
+    "mcp-python>=0.1.0",
     "sentence-transformers>=2.2.2",
     "python-dotenv>=1.0.0",
     "loguru>=0.7.0",
-    "asyncio>=3.4.3",
     "aiohttp>=3.8.5",
+    "streamlit>=1.28.0",
+    "plotly>=5.15.0",
 ]
 
 [project.optional-dependencies]
@@ -109,6 +113,11 @@ postgres = [
 ]
 chroma = [
     "chromadb>=0.4.6",
+]
+web = [
+    "streamlit>=1.28.0",
+    "plotly>=5.15.0",
+    "pandas>=2.0.0",
 ]
 
 [project.urls]
@@ -175,7 +184,12 @@ pip install -e ".[postgres]"
 pip install -e ".[chroma]"
 ```
 
-6. 모든 의존성 설치:
+6. 웹 인터페이스 지원 설치:
 ```bash
-pip install -e ".[dev,docs,postgres,chroma]"
+pip install -e ".[web]"
+```
+
+7. 모든 의존성 설치:
+```bash
+pip install -e ".[dev,docs,postgres,chroma,web]"
 ```

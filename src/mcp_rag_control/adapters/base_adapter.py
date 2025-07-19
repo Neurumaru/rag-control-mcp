@@ -10,6 +10,8 @@ import httpx
 from pydantic import BaseModel
 
 from ..models.module import Module, ModuleStatus
+from ..utils.logger import get_logger, log_error_with_context, log_performance_metric
+from ..utils.config import get_config, validate_url
 
 
 class AdapterError(Exception):
@@ -54,6 +56,12 @@ class BaseAdapter(ABC):
         self.client: Optional[httpx.AsyncClient] = None
         self._connected = False
         self._last_health_check = None
+        self.logger = get_logger(f"{__name__}.{type(self).__name__}")
+        self.config = get_config()
+        
+        # Validate MCP server URL
+        if not validate_url(self.module.mcp_server_url):
+            raise ValueError(f"Invalid MCP server URL: {self.module.mcp_server_url}")
     
     async def __aenter__(self):
         """Async context manager entry."""
@@ -66,10 +74,17 @@ class BaseAdapter(ABC):
     
     async def connect(self) -> None:
         """Establish connection to the MCP server."""
+        start_time = time.time()
+        
         try:
+            self.logger.info(
+                f"Connecting to MCP server: {self.module.mcp_server_url}",
+                extra={"module_id": str(self.module.id), "module_type": self.module.module_type.value}
+            )
+            
             self.client = httpx.AsyncClient(
-                timeout=httpx.Timeout(30.0),
-                limits=httpx.Limits(max_connections=10)
+                timeout=httpx.Timeout(self.config.mcp.timeout_seconds),
+                limits=httpx.Limits(max_connections=self.config.mcp.max_connections)
             )
             
             # Test connection with health check
@@ -77,28 +92,98 @@ class BaseAdapter(ABC):
             self._connected = True
             self.module.update_status(ModuleStatus.ACTIVE)
             
+            duration_ms = (time.time() - start_time) * 1000
+            log_performance_metric(
+                "adapter_connect",
+                duration_ms,
+                success=True,
+                module_id=str(self.module.id),
+                module_type=self.module.module_type.value
+            )
+            
+            self.logger.info(
+                f"Successfully connected to MCP server",
+                extra={"module_id": str(self.module.id), "duration_ms": duration_ms}
+            )
+            
         except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
             self.module.update_status(ModuleStatus.ERROR)
+            
+            log_error_with_context(
+                e,
+                {
+                    "module_id": str(self.module.id),
+                    "module_type": self.module.module_type.value,
+                    "mcp_server_url": self.module.mcp_server_url,
+                    "duration_ms": duration_ms
+                },
+                "BaseAdapter.connect"
+            )
+            
+            log_performance_metric(
+                "adapter_connect",
+                duration_ms,
+                success=False,
+                module_id=str(self.module.id),
+                error=str(e)
+            )
+            
             raise ConnectionError(f"Failed to connect to {self.module.mcp_server_url}: {str(e)}")
     
     async def disconnect(self) -> None:
         """Close connection to the MCP server."""
-        if self.client:
-            await self.client.aclose()
-            self.client = None
-        
-        self._connected = False
-        self.module.update_status(ModuleStatus.INACTIVE)
+        try:
+            if self.client:
+                await self.client.aclose()
+                self.client = None
+            
+            self._connected = False
+            self.module.update_status(ModuleStatus.INACTIVE)
+            
+            self.logger.info(
+                f"Disconnected from MCP server",
+                extra={"module_id": str(self.module.id)}
+            )
+            
+        except Exception as e:
+            log_error_with_context(
+                e,
+                {"module_id": str(self.module.id)},
+                "BaseAdapter.disconnect"
+            )
     
     async def _test_connection(self) -> None:
         """Test connection to MCP server."""
         if not self.client:
             raise ConnectionError("Client not initialized")
         
+        # Additional URL validation at runtime
+        if not validate_url(self.module.mcp_server_url):
+            raise ConnectionError(f"Invalid MCP server URL: {self.module.mcp_server_url}")
+        
         try:
             response = await self.client.get(f"{self.module.mcp_server_url}/health")
             response.raise_for_status()
+            
+            self.logger.debug(
+                f"Health check successful",
+                extra={
+                    "module_id": str(self.module.id),
+                    "status_code": response.status_code,
+                    "response_time_ms": response.elapsed.total_seconds() * 1000 if response.elapsed else 0
+                }
+            )
+            
         except httpx.RequestError as e:
+            log_error_with_context(
+                e,
+                {
+                    "module_id": str(self.module.id),
+                    "mcp_server_url": self.module.mcp_server_url
+                },
+                "BaseAdapter._test_connection"
+            )
             raise ConnectionError(f"Connection test failed: {str(e)}")
     
     async def send_request(self, method: str, params: Dict[str, Any]) -> MCPResponse:

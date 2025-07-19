@@ -1,12 +1,85 @@
 """Database adapter for MCP-RAG-Control system."""
 
+import re
 from typing import Any, Dict, List, Optional, Union
 
 from .base_adapter import BaseAdapter, OperationError
+from ..utils.logger import get_logger, log_error_with_context
 
 
 class DatabaseAdapter(BaseAdapter):
     """Adapter for database operations via MCP."""
+    
+    def __init__(self, *args, **kwargs):
+        """Initialize database adapter with additional security measures."""
+        super().__init__(*args, **kwargs)
+        self.logger = get_logger(f"{__name__}.DatabaseAdapter")
+        
+        # SQL injection prevention patterns
+        self._dangerous_patterns = [
+            r'(\b(DROP|DELETE|INSERT|UPDATE|ALTER|CREATE|TRUNCATE)\b)',
+            r'(--|/\*|\*/)',
+            r'(\bUNION\b.*\bSELECT\b)',
+            r'(\bEXEC(UTE)?\b)',
+            r'(\bxp_\w+)',
+            r'(\bsp_\w+)'
+        ]
+        self._compiled_patterns = [re.compile(pattern, re.IGNORECASE) for pattern in self._dangerous_patterns]
+    
+    def _validate_identifier(self, identifier: str) -> bool:
+        """Validate SQL identifier (table name, column name, etc.).
+        
+        Args:
+            identifier: SQL identifier to validate
+            
+        Returns:
+            True if valid, False otherwise
+        """
+        if not identifier or not isinstance(identifier, str):
+            return False
+        
+        # Check length
+        if len(identifier) > 64:  # Standard SQL identifier limit
+            return False
+        
+        # Check for valid identifier pattern (alphanumeric + underscore, starting with letter)
+        if not re.match(r'^[a-zA-Z][a-zA-Z0-9_]*$', identifier):
+            return False
+        
+        # Check for dangerous patterns
+        for pattern in self._compiled_patterns:
+            if pattern.search(identifier):
+                self.logger.warning(
+                    f"Potentially dangerous identifier detected: {identifier}",
+                    extra={"identifier": identifier, "module_id": str(self.module.id)}
+                )
+                return False
+        
+        return True
+    
+    def _validate_sql_value(self, value: Any) -> bool:
+        """Validate SQL value for potential injection attempts.
+        
+        Args:
+            value: Value to validate
+            
+        Returns:
+            True if safe, False if potentially dangerous
+        """
+        if value is None or isinstance(value, (int, float, bool)):
+            return True
+        
+        if isinstance(value, str):
+            # Check for dangerous patterns in string values
+            for pattern in self._compiled_patterns:
+                if pattern.search(value):
+                    self.logger.warning(
+                        f"Potentially dangerous SQL value detected",
+                        extra={"value_type": type(value).__name__, "module_id": str(self.module.id)}
+                    )
+                    return False
+        
+        return True
     
     async def _get_health_details(self) -> Dict[str, Any]:
         """Get database specific health details."""

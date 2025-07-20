@@ -7,6 +7,10 @@ from uuid import UUID
 
 from ..adapters import BaseAdapter, VectorAdapter, DatabaseAdapter
 from ..models.module import Module, ModuleStatus, ModuleType, ModuleHealthCheck
+from ..storage.json_storage import JSONStorage
+from ..utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class ModuleRegistryError(Exception):
@@ -27,13 +31,17 @@ class ModuleDependencyError(ModuleRegistryError):
 class ModuleRegistry:
     """Registry for managing MCP modules."""
     
-    def __init__(self):
+    def __init__(self, storage: Optional[JSONStorage] = None):
         """Initialize module registry."""
         self._modules: Dict[UUID, Module] = {}
         self._adapters: Dict[UUID, BaseAdapter] = {}
         self._dependency_graph: Dict[UUID, Set[UUID]] = {}
         self._reverse_dependencies: Dict[UUID, Set[UUID]] = {}
         self._lock = asyncio.Lock()
+        self._storage = storage or JSONStorage()
+        
+        # Load existing modules from storage
+        self._load_modules_from_storage()
     
     async def register_module(self, module: Module) -> None:
         """Register a new module."""
@@ -67,6 +75,9 @@ class ModuleRegistry:
             except Exception as e:
                 module.update_status(ModuleStatus.ERROR)
                 # Don't raise here - allow registration but mark as error
+            
+            # Save to storage
+            self._save_module_to_storage(module)
     
     async def unregister_module(self, module_id: UUID, force: bool = False) -> None:
         """Unregister a module."""
@@ -105,6 +116,11 @@ class ModuleRegistry:
                     if dependent:
                         dependent.remove_dependency(module_id)
                         self._dependency_graph[dependent_id].discard(module_id)
+                        # Update dependent module in storage
+                        self._save_module_to_storage(dependent)
+            
+            # Remove from storage
+            self._delete_module_from_storage(module_id)
     
     def get_module(self, module_id: UUID) -> Optional[Module]:
         """Get module by ID."""
@@ -335,3 +351,39 @@ class ModuleRegistry:
             "module_types": module_types,
             "total_dependencies": sum(len(deps) for deps in self._dependency_graph.values()),
         }
+    
+    def _load_modules_from_storage(self) -> None:
+        """Load modules from storage on startup."""
+        try:
+            modules = self._storage.load_all_modules()
+            for module in modules:
+                self._modules[module.id] = module
+                self._update_dependency_graph(module)
+                logger.info(f"Loaded module {module.id} from storage")
+        except Exception as e:
+            logger.error(f"Failed to load modules from storage: {e}")
+    
+    def _save_module_to_storage(self, module: Module) -> None:
+        """Save a module to storage."""
+        try:
+            self._storage.save_module(module)
+        except Exception as e:
+            logger.error(f"Failed to save module {module.id} to storage: {e}")
+    
+    def _delete_module_from_storage(self, module_id: UUID) -> None:
+        """Delete a module from storage."""
+        try:
+            self._storage.delete_module(module_id)
+        except Exception as e:
+            logger.error(f"Failed to delete module {module_id} from storage: {e}")
+    
+    def _update_dependency_graph(self, module: Module) -> None:
+        """Update dependency graph for a module."""
+        self._dependency_graph[module.id] = set(module.dependencies)
+        if module.id not in self._reverse_dependencies:
+            self._reverse_dependencies[module.id] = set()
+        
+        for dep_id in module.dependencies:
+            if dep_id not in self._reverse_dependencies:
+                self._reverse_dependencies[dep_id] = set()
+            self._reverse_dependencies[dep_id].add(module.id)

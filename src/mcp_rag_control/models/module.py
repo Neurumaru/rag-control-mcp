@@ -98,18 +98,54 @@ class Module(BaseModel):
         if module_id in self.dependencies:
             self.dependencies.remove(module_id)
             self.updated_at = datetime.utcnow()
+
+
+# API Request/Response Models
+class ModuleRegistrationRequest(BaseModel):
+    """Request model for registering a new module."""
     
-    def add_tag(self, tag: str) -> None:
-        """Add a tag to this module."""
-        if tag not in self.tags:
-            self.tags.append(tag)
-            self.updated_at = datetime.utcnow()
+    name: str = Field(..., description="Human-readable module name")
+    module_type: ModuleType = Field(..., description="Type of the module")
+    description: Optional[str] = Field(None, description="Module description")
+    version: str = Field(default="1.0.0", description="Module version")
+    mcp_server_url: str = Field(..., description="MCP server URL")
+    mcp_protocol_version: str = Field(default="1.0", description="MCP protocol version")
+    config: ModuleConfig = Field(default_factory=ModuleConfig)
+    input_schema: Dict[str, Any] = Field(default_factory=dict)
+    output_schema: Dict[str, Any] = Field(default_factory=dict)
+    supported_operations: List[str] = Field(default_factory=list)
+    dependencies: List[str] = Field(default_factory=list, description="Dependency module IDs as strings")
+    tags: List[str] = Field(default_factory=list)
+
+
+class ModuleUpdateRequest(BaseModel):
+    """Request model for updating an existing module."""
     
-    def remove_tag(self, tag: str) -> None:
-        """Remove a tag from this module."""
-        if tag in self.tags:
-            self.tags.remove(tag)
-            self.updated_at = datetime.utcnow()
+    name: Optional[str] = Field(None, description="Human-readable module name")
+    description: Optional[str] = Field(None, description="Module description")
+    version: Optional[str] = Field(None, description="Module version")
+    status: Optional[ModuleStatus] = Field(None, description="Module status")
+    config: Optional[ModuleConfig] = Field(None, description="Module configuration")
+    input_schema: Optional[Dict[str, Any]] = Field(None, description="Input schema")
+    output_schema: Optional[Dict[str, Any]] = Field(None, description="Output schema")
+    supported_operations: Optional[List[str]] = Field(None, description="Supported operations")
+    dependencies: Optional[List[str]] = Field(None, description="Dependency module IDs as strings")
+    tags: Optional[List[str]] = Field(None, description="Module tags")
+
+
+class ModuleResponse(BaseModel):
+    """Response model for module operations."""
+    
+    module: Module
+    message: str = Field(default="Operation completed successfully")
+
+
+class ModuleListResponse(BaseModel):
+    """Response model for listing modules."""
+    
+    modules: List[Module]
+    total: int
+    message: str = Field(default="Modules retrieved successfully")
 
 
 class ModuleHealthCheck(BaseModel):

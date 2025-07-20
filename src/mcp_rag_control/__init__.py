@@ -4,20 +4,16 @@ __version__ = "0.1.0"
 __author__ = "MCP-RAG-Control Team"
 __email__ = "team@mcp-rag-control.com"
 
-from .models import Module, Pipeline, RequestSchema, ResponseSchema
+from .models import Module, Pipeline
 from .adapters import BaseAdapter, VectorAdapter, DatabaseAdapter
 from .registry import ModuleRegistry, PipelineRegistry
-from .controller import Controller
 
 __all__ = [
     "Module",
     "Pipeline", 
-    "RequestSchema",
-    "ResponseSchema",
     "BaseAdapter",
     "VectorAdapter", 
     "DatabaseAdapter",
     "ModuleRegistry",
     "PipelineRegistry",
-    "Controller",
 ]

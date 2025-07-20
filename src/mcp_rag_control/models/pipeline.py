@@ -216,3 +216,67 @@ class PipelineExecution(BaseModel):
         if self.started_at and self.completed_at:
             delta = self.completed_at - self.started_at
             self.execution_time_seconds = delta.total_seconds()
+
+
+# API Request/Response Models
+class PipelineRegistrationRequest(BaseModel):
+    """Request model for registering a new pipeline."""
+    
+    name: str = Field(..., description="Human-readable pipeline name")
+    description: Optional[str] = Field(None, description="Pipeline description")
+    version: str = Field(default="1.0.0", description="Pipeline version")
+    steps: List[PipelineStep] = Field(..., description="Pipeline steps")
+    variables: Dict[str, Any] = Field(default_factory=dict, description="Pipeline variables")
+    config: Dict[str, Any] = Field(default_factory=dict, description="Pipeline configuration")
+    tags: List[str] = Field(default_factory=list, description="Pipeline tags")
+
+
+class PipelineUpdateRequest(BaseModel):
+    """Request model for updating an existing pipeline."""
+    
+    name: Optional[str] = Field(None, description="Human-readable pipeline name")
+    description: Optional[str] = Field(None, description="Pipeline description")
+    version: Optional[str] = Field(None, description="Pipeline version")
+    status: Optional[PipelineStatus] = Field(None, description="Pipeline status")
+    steps: Optional[List[PipelineStep]] = Field(None, description="Pipeline steps")
+    variables: Optional[Dict[str, Any]] = Field(None, description="Pipeline variables")
+    config: Optional[Dict[str, Any]] = Field(None, description="Pipeline configuration")
+    tags: Optional[List[str]] = Field(None, description="Pipeline tags")
+
+
+class PipelineExecutionRequest(BaseModel):
+    """Request model for executing a pipeline."""
+    
+    pipeline_id: str = Field(..., description="ID of the pipeline to execute")
+    input_data: Dict[str, Any] = Field(default_factory=dict, description="Input data for pipeline")
+    variables: Dict[str, Any] = Field(default_factory=dict, description="Runtime variables")
+    async_execution: bool = Field(default=False, description="Execute asynchronously")
+
+
+class PipelineExecutionResult(BaseModel):
+    """Result model for pipeline execution."""
+    
+    execution_id: str = Field(..., description="Unique execution identifier")
+    pipeline_id: str = Field(..., description="ID of the executed pipeline")
+    status: str = Field(..., description="Execution status")
+    input_data: Dict[str, Any] = Field(default_factory=dict, description="Input data")
+    output_data: Dict[str, Any] = Field(default_factory=dict, description="Output data")
+    error_message: Optional[str] = Field(None, description="Error message if failed")
+    started_at: Optional[str] = Field(None, description="Execution start time")
+    completed_at: Optional[str] = Field(None, description="Execution completion time")
+    execution_time_seconds: Optional[float] = Field(None, description="Total execution time")
+
+
+class PipelineResponse(BaseModel):
+    """Response model for pipeline operations."""
+    
+    pipeline: Pipeline
+    message: str = Field(default="Operation completed successfully")
+
+
+class PipelineListResponse(BaseModel):
+    """Response model for listing pipelines."""
+    
+    pipelines: List[Pipeline]
+    total: int
+    message: str = Field(default="Pipelines retrieved successfully")

@@ -229,38 +229,5 @@
       "test",
       "integration"
     ]
-  },
-  "954cd03e-3a70-40e8-bfcc-75c40e42ebca": {
-    "id": "954cd03e-3a70-40e8-bfcc-75c40e42ebca",
-    "name": "test-vector-store",
-    "module_type": "vector_store",
-    "description": "Test vector store for integration testing",
-    "version": "1.0.0",
-    "mcp_server_url": "http://localhost:8080/mcp",
-    "mcp_protocol_version": "1.0",
-    "config": {
-      "host": "localhost",
-      "port": 5432,
-      "database_name": "test_vectors",
-      "collection_name": null,
-      "api_key": null,
-      "model_name": null,
-      "dimensions": 768,
-      "max_tokens": null,
-      "temperature": null,
-      "custom_params": {}
-    },
-    "status": "error",
-    "created_at": "2025-07-20T10:02:40.596982",
-    "updated_at": "2025-07-20T10:02:40.613322",
-    "last_health_check": null,
-    "input_schema": {},
-    "output_schema": {},
-    "supported_operations": [],
-    "dependencies": [],
-    "tags": [
-      "test",
-      "integration"
-    ]
   }
 }

@@ -8,6 +8,7 @@ from typing import Dict, Any
 from ..models.request import HealthCheckResponse, ErrorResponse
 from ..utils.logger import get_logger
 from ..registry.module_registry import ModuleRegistry
+from ..registry.pipeline_registry import PipelineRegistry
 from .routes import modules, pipelines, execute
 from .middleware.security import (
     RateLimitMiddleware, SecurityHeadersMiddleware, 
@@ -15,7 +16,8 @@ from .middleware.security import (
 )
 
 logger = get_logger(__name__)
-registry = ModuleRegistry()
+module_registry = ModuleRegistry()
+pipeline_registry = PipelineRegistry()
 
 app = FastAPI(
     title="MCP-RAG-Control API",
@@ -85,13 +87,14 @@ async def health_check():
     uptime = time.time() - start_time
     
     # Get registry statistics
-    stats = registry.get_stats()
+    module_stats = module_registry.get_stats()
+    pipeline_stats = pipeline_registry.get_pipeline_stats()
     
     return HealthCheckResponse(
         status="healthy",
         timestamp=datetime.now().isoformat(),
         version="0.1.0",
         uptime=uptime,
-        modules_count=stats["total_modules"],
-        pipelines_count=0  # Will be implemented when pipeline registry is updated
+        modules_count=module_stats["total_modules"],
+        pipelines_count=pipeline_stats["total_pipelines"]
     )

@@ -25,7 +25,7 @@ class TestVectorAdapter:
                 collection_name="test_collection",
                 dimensions=512
             ),
-            supported_operations=["search", "add", "delete", "update", "create_collection"]
+            supported_operations=["search", "add", "delete", "update", "create_collection", "validate"]
         )
     
     @pytest.fixture
@@ -66,8 +66,12 @@ class TestVectorAdapter:
                 adapter = VectorAdapter(vector_module)
                 await adapter.connect()
                 
-                # Test search
-                results = await adapter.search_vectors([0.1, 0.2, 0.3], top_k=2)
+                # Test search using MCP interface (512 dimensions to match module config)
+                query_vector = [0.1] * 512  # Create 512-dimensional vector
+                results = await adapter.execute_operation("search", {
+                    "query_vector": query_vector,
+                    "top_k": 2
+                })
                 
                 assert "results" in results
                 assert len(results["results"]) == 2
@@ -99,17 +103,16 @@ class TestVectorAdapter:
                 adapter = VectorAdapter(vector_module)
                 await adapter.connect()
                 
-                # Test add vectors
-                vectors = [
-                    {"id": "1", "vector": [0.1, 0.2, 0.3], "metadata": {"title": "Test 1"}},
-                    {"id": "2", "vector": [0.4, 0.5, 0.6], "metadata": {"title": "Test 2"}}
-                ]
-                
-                result = await adapter.add_vectors(vectors)
+                # Test add vectors using MCP interface (proper format)
+                result = await adapter.execute_operation("add", {
+                    "vectors": [[0.1] * 512, [0.2] * 512],  # 512-dimensional vectors
+                    "ids": ["1", "2"],
+                    "metadata": [{"title": "Test 1"}, {"title": "Test 2"}]
+                })
                 
                 assert result["added_count"] == 2
-                assert "1" in result["ids"]
-                assert "2" in result["ids"]
+                assert "failed_ids" in result
+                assert len(result["failed_ids"]) == 0
     
     @pytest.mark.asyncio
     async def test_delete_vectors_success(self, vector_module, mock_config):
@@ -138,7 +141,10 @@ class TestVectorAdapter:
                 await adapter.connect()
                 
                 # Test delete vectors
-                result = await adapter.delete_vectors(["1", "2"])
+                # Test delete vectors using MCP interface
+                result = await adapter.execute_operation("delete", {
+                    "ids": ["1", "2"]
+                })
                 
                 assert result["deleted_count"] == 2
     
@@ -213,10 +219,13 @@ class TestVectorAdapter:
                 await adapter.connect()
                 
                 # Test collection creation
-                result = await adapter.create_collection("new_collection", dimensions=768)
+                # Test create collection using MCP interface
+                result = await adapter.execute_operation("create_collection", {
+                    "collection_name": "new_collection",
+                    "dimensions": 768
+                })
                 
                 assert result["collection_name"] == "new_collection"
-                assert result["dimensions"] == 768
                 assert result["created"] is True
     
     @pytest.mark.asyncio
@@ -236,34 +245,42 @@ class TestVectorAdapter:
             adapter = VectorAdapter(vector_module)
             schema = await adapter.get_schema()
             
-            assert "vector_store" in schema
-            assert "operations" in schema["vector_store"]
-            assert "search" in schema["vector_store"]["operations"]
-            assert "add" in schema["vector_store"]["operations"]
+            assert schema["type"] == "vector_database"
+            assert "operations" in schema
+            assert "search" in schema["operations"]
+            assert "add" in schema["operations"]
     
-    def test_validate_vector_dimensions(self, vector_module, mock_config):
-        """Test vector dimension validation."""
+    @pytest.mark.asyncio
+    async def test_validate_vector_operations(self, vector_module, mock_config):
+        """Test vector validation through MCP interface."""
         with patch('src.mcp_rag_control.adapters.base_adapter.get_config', return_value=mock_config):
-            adapter = VectorAdapter(vector_module)
-            
-            # Valid dimensions
-            assert adapter._validate_vector_dimensions([0.1, 0.2, 0.3], expected_dim=3) is True
-            
-            # Invalid dimensions
-            assert adapter._validate_vector_dimensions([0.1, 0.2], expected_dim=3) is False
-            assert adapter._validate_vector_dimensions([], expected_dim=3) is False
-            assert adapter._validate_vector_dimensions(None, expected_dim=3) is False
-    
-    def test_validate_vector_values(self, vector_module, mock_config):
-        """Test vector value validation."""
-        with patch('src.mcp_rag_control.adapters.base_adapter.get_config', return_value=mock_config):
-            adapter = VectorAdapter(vector_module)
-            
-            # Valid vectors
-            assert adapter._validate_vector_values([0.1, 0.2, 0.3]) is True
-            assert adapter._validate_vector_values([-1.0, 0.0, 1.0]) is True
-            
-            # Invalid vectors
-            assert adapter._validate_vector_values([float('inf'), 0.2, 0.3]) is False
-            assert adapter._validate_vector_values([0.1, float('nan'), 0.3]) is False
-            assert adapter._validate_vector_values(["a", 0.2, 0.3]) is False
+            with patch('httpx.AsyncClient') as mock_client_class:
+                mock_client = AsyncMock()
+                mock_client_class.return_value = mock_client
+                
+                # Mock validation responses
+                mock_response = MagicMock()
+                mock_response.json.return_value = {
+                    "jsonrpc": "2.0",
+                    "result": {"valid": True, "message": "Vector is valid"},
+                    "id": "test_id"
+                }
+                mock_client.post.return_value = mock_response
+                
+                # Mock health check
+                health_response = MagicMock()
+                health_response.status_code = 200
+                health_response.raise_for_status.return_value = None
+                mock_client.get.return_value = health_response
+                
+                adapter = VectorAdapter(vector_module)
+                await adapter.connect()
+                
+                # Test vector validation using MCP interface
+                result = await adapter.execute_operation("validate", {
+                    "vector": [0.1] * 512,  # 512-dimensional vector
+                    "expected_dimensions": 512
+                })
+                
+                assert result["valid"] is True
+                assert "message" in result

@@ -1,5 +1,28 @@
 # MCP-RAG-Control API 설계
 
+## MCP 기반 Vector Database 통합
+
+### Vector Database 연결 아키텍처
+- **MCP Protocol**: 모든 Vector Database는 MCP 서버로 연결
+- **지원 데이터베이스**: FAISS, Pinecone, Weaviate, Chroma, Qdrant, Milvus 등
+- **표준화된 작업**: `search`, `add`, `delete`, `update`, `validate`, `create_collection`
+- **일관된 인터페이스**: 모든 Vector DB에 동일한 API 사용
+
+### Vector Database MCP 연결 예제
+```json
+{
+  "mcp_server_url": "https://vector-db.example.com/mcp",
+  "module_type": "vector_store",
+  "config": {
+    "collection_name": "documents",
+    "dimensions": 1536,
+    "metric": "cosine",
+    "api_key": "your_api_key"
+  },
+  "supported_operations": ["search", "add", "delete", "validate"]
+}
+```
+
 ## 1. 모듈 관리 API
 
 ### 1.1 모듈 등록
@@ -10,7 +33,7 @@
 {
   "module_id": "unique_module_id",
   "name": "모듈 이름",
-  "type": "데이터소스|벡터저장소|임베딩모델|...",
+  "type": "database|vector_store|embedding_model|language_model",
   "description": "모듈 설명",
   "config": {
     "connection_string": "...",
@@ -26,7 +49,7 @@
   "module": {
     "module_id": "unique_module_id",
     "name": "모듈 이름",
-    "type": "데이터소스|벡터저장소|임베딩모델|...",
+    "type": "database|vector_store|embedding_model|language_model",
     "description": "모듈 설명"
   }
 }
@@ -44,7 +67,7 @@
     {
       "module_id": "unique_module_id",
       "name": "모듈 이름",
-      "type": "데이터소스|벡터저장소|임베딩모델|...",
+      "type": "database|vector_store|embedding_model|language_model",
       "description": "모듈 설명"
     },
     ...
@@ -62,7 +85,7 @@
   "module": {
     "module_id": "unique_module_id",
     "name": "모듈 이름",
-    "type": "데이터소스|벡터저장소|임베딩모델|...",
+    "type": "database|vector_store|embedding_model|language_model",
     "description": "모듈 설명",
     "config": {
       "connection_string": "...",
@@ -93,7 +116,7 @@
   "module": {
     "module_id": "unique_module_id",
     "name": "업데이트된 모듈 이름",
-    "type": "데이터소스|벡터저장소|임베딩모델|...",
+    "type": "database|vector_store|embedding_model|language_model",
     "description": "업데이트된 모듈 설명"
   }
 }

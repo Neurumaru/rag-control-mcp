@@ -50,18 +50,44 @@ class MCPConfig(BaseModel):
     health_check_interval: int = Field(default=60, description="Health check interval in seconds")
     retry_attempts: int = Field(default=3, description="Number of retry attempts")
     retry_delay: float = Field(default=1.0, description="Delay between retries in seconds")
+
+
+class LangGraphConfig(BaseModel):
+    """LangGraph-specific configuration."""
     
-    @validator('timeout_seconds')
-    def validate_timeout(cls, v):
-        if v <= 0:
-            raise ValueError('Timeout must be positive')
+    # Checkpointer configuration
+    checkpointer_type: str = Field(default="memory", description="Checkpointer type (memory/postgres/redis/sqlite)")
+    checkpoint_db_uri: Optional[str] = Field(default=None, description="Database URI for checkpointer")
+    checkpoint_ttl_seconds: int = Field(default=43200, description="Checkpoint TTL in seconds (12 hours)")
+    checkpoint_sweep_interval: int = Field(default=600, description="Sweep interval in seconds (10 minutes)")
+    
+    # Execution configuration
+    max_recursion_limit: int = Field(default=25, description="Maximum recursion limit for graph execution")
+    stream_mode: str = Field(default="values", description="Default stream mode (values/debug/updates)")
+    enable_debug_mode: bool = Field(default=False, description="Enable debug mode for detailed logging")
+    
+    # State management
+    state_compression: bool = Field(default=True, description="Enable state compression for large states")
+    max_state_size_mb: int = Field(default=50, description="Maximum state size in MB")
+    
+    # Monitoring and tracing
+    enable_langsmith: bool = Field(default=False, description="Enable LangSmith tracing")
+    langsmith_project: Optional[str] = Field(default=None, description="LangSmith project name")
+    langsmith_api_key: Optional[str] = Field(default=None, description="LangSmith API key")
+    
+    # Performance settings
+    node_timeout_seconds: float = Field(default=300.0, description="Individual node timeout in seconds")
+    parallel_execution: bool = Field(default=True, description="Enable parallel node execution where possible")
+    batch_size: int = Field(default=10, description="Batch size for bulk operations")
+    
+    @validator('checkpointer_type')
+    def validate_checkpointer_type(cls, v):
+        allowed = ['memory', 'postgres', 'redis', 'sqlite', 'mongodb']
+        if v not in allowed:
+            raise ValueError(f'Checkpointer type must be one of: {allowed}')
         return v
     
-    @validator('max_connections')
-    def validate_max_connections(cls, v):
-        if v <= 0:
-            raise ValueError('Max connections must be positive')
-        return v
+
 
 
 class AppConfig(BaseModel):
@@ -77,10 +103,11 @@ class AppConfig(BaseModel):
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
     mcp: MCPConfig = Field(default_factory=MCPConfig)
+    langgraph: LangGraphConfig = Field(default_factory=LangGraphConfig)
     
     @validator('environment')
     def validate_environment(cls, v):
-        allowed = ['development', 'staging', 'production']
+        allowed = ['development', 'staging', 'production', 'test']
         if v not in allowed:
             raise ValueError(f'Environment must be one of: {allowed}')
         return v
@@ -164,6 +191,24 @@ def load_config_from_env() -> AppConfig:
             'health_check_interval': int(os.getenv('MCP_HEALTH_CHECK_INTERVAL', '60')),
             'retry_attempts': int(os.getenv('MCP_RETRY_ATTEMPTS', '3')),
             'retry_delay': float(os.getenv('MCP_RETRY_DELAY', '1.0')),
+        },
+        
+        'langgraph': {
+            'checkpointer_type': os.getenv('LANGGRAPH_CHECKPOINTER_TYPE', 'memory'),
+            'checkpoint_db_uri': os.getenv('LANGGRAPH_CHECKPOINT_DB_URI'),
+            'checkpoint_ttl_seconds': int(os.getenv('LANGGRAPH_CHECKPOINT_TTL', '43200')),
+            'checkpoint_sweep_interval': int(os.getenv('LANGGRAPH_CHECKPOINT_SWEEP', '600')),
+            'max_recursion_limit': int(os.getenv('LANGGRAPH_MAX_RECURSION', '25')),
+            'stream_mode': os.getenv('LANGGRAPH_STREAM_MODE', 'values'),
+            'enable_debug_mode': os.getenv('LANGGRAPH_DEBUG', 'false').lower() == 'true',
+            'state_compression': os.getenv('LANGGRAPH_STATE_COMPRESSION', 'true').lower() == 'true',
+            'max_state_size_mb': int(os.getenv('LANGGRAPH_MAX_STATE_SIZE', '50')),
+            'enable_langsmith': os.getenv('LANGGRAPH_ENABLE_LANGSMITH', 'false').lower() == 'true',
+            'langsmith_project': os.getenv('LANGSMITH_PROJECT'),
+            'langsmith_api_key': os.getenv('LANGSMITH_API_KEY'),
+            'node_timeout_seconds': float(os.getenv('LANGGRAPH_NODE_TIMEOUT', '300.0')),
+            'parallel_execution': os.getenv('LANGGRAPH_PARALLEL_EXECUTION', 'true').lower() == 'true',
+            'batch_size': int(os.getenv('LANGGRAPH_BATCH_SIZE', '10')),
         }
     }
     

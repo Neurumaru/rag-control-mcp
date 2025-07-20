@@ -16,7 +16,12 @@ class TestModuleRegistry:
     @pytest.fixture
     def registry(self):
         """Create a fresh registry for each test."""
-        return ModuleRegistry()
+        # Create registry with empty in-memory storage for testing
+        registry = ModuleRegistry()
+        # Clear any loaded modules for clean test state
+        registry._modules.clear()
+        registry._dependency_graph.clear()
+        return registry
     
     @pytest.fixture
     def vector_module(self):
@@ -35,7 +40,7 @@ class TestModuleRegistry:
         return Module(
             id=uuid4(),
             name="test_database",
-            module_type=ModuleType.DATABASE,
+            module_type=ModuleType.DATABASE_CONNECTOR,
             mcp_server_url="https://db.example.com/mcp",
             config=ModuleConfig(host="localhost", port=5432)
         )
@@ -190,7 +195,7 @@ class TestModuleRegistry:
         assert len(vector_modules) == 1
         assert vector_modules[0] == vector_module
         
-        db_modules = registry.list_modules(module_type=ModuleType.DATABASE)
+        db_modules = registry.list_modules(module_type=ModuleType.DATABASE_CONNECTOR)
         assert len(db_modules) == 1
         assert db_modules[0] == database_module
     
@@ -223,11 +228,11 @@ class TestModuleRegistry:
     def test_get_dependency_chain(self, registry):
         """Test getting dependency chain for modules."""
         # Create modules with chain: A -> B -> C
-        module_c = Module(id=uuid4(), name="C", module_type=ModuleType.DATABASE, 
+        module_c = Module(id=uuid4(), name="C", module_type=ModuleType.DATABASE_CONNECTOR, 
                          mcp_server_url="https://c.example.com/mcp")
         module_b = Module(id=uuid4(), name="B", module_type=ModuleType.VECTOR_STORE, 
                          mcp_server_url="https://b.example.com/mcp", dependencies=[module_c.id])
-        module_a = Module(id=uuid4(), name="A", module_type=ModuleType.LLM, 
+        module_a = Module(id=uuid4(), name="A", module_type=ModuleType.LLM_GENERATOR, 
                          mcp_server_url="https://a.example.com/mcp", dependencies=[module_b.id])
         
         # Add to registry
@@ -250,7 +255,7 @@ class TestModuleRegistry:
     def test_validate_dependencies_circular(self, registry):
         """Test validation detects circular dependencies."""
         # Create circular dependency: A -> B -> A
-        module_a = Module(id=uuid4(), name="A", module_type=ModuleType.DATABASE, 
+        module_a = Module(id=uuid4(), name="A", module_type=ModuleType.DATABASE_CONNECTOR, 
                          mcp_server_url="https://a.example.com/mcp")
         module_b = Module(id=uuid4(), name="B", module_type=ModuleType.VECTOR_STORE, 
                          mcp_server_url="https://b.example.com/mcp")
@@ -298,4 +303,4 @@ class TestModuleRegistry:
         assert stats["error_modules"] == 1
         assert stats["inactive_modules"] == 0
         assert stats["module_types"]["vector_store"] == 1
-        assert stats["module_types"]["database"] == 1
+        assert stats["module_types"]["database_connector"] == 1

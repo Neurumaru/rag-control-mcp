@@ -43,7 +43,8 @@ class VectorAdapter(BaseAdapter):
             "create_collection": self._create_collection,
             "delete_collection": self._delete_collection,
             "list_collections": self._list_collections,
-            "get_collection_info": self._get_collection_info
+            "get_collection_info": self._get_collection_info,
+            "validate": self._validate_vector
         }
         
         handler = method_map.get(operation)
@@ -87,6 +88,17 @@ class VectorAdapter(BaseAdapter):
                     },
                     "returns": {
                         "deleted_count": {"type": "integer"}
+                    }
+                },
+                "validate": {
+                    "description": "Validate vector data",
+                    "parameters": {
+                        "vector": {"type": "array", "description": "Vector to validate"},
+                        "expected_dimensions": {"type": "integer", "optional": True}
+                    },
+                    "returns": {
+                        "valid": {"type": "boolean"},
+                        "message": {"type": "string"}
                     }
                 }
             }
@@ -345,3 +357,49 @@ class VectorAdapter(BaseAdapter):
         }
         
         return await self._add_vectors(parameters)
+    
+    async def _validate_vector(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate vector data through MCP interface."""
+        vector = parameters.get("vector")
+        expected_dimensions = parameters.get("expected_dimensions")
+        
+        if not vector:
+            return {"valid": False, "message": "Vector is required"}
+        
+        if not isinstance(vector, list):
+            return {"valid": False, "message": "Vector must be a list"}
+        
+        # Check dimensions
+        if expected_dimensions and len(vector) != expected_dimensions:
+            return {
+                "valid": False, 
+                "message": f"Vector dimensions ({len(vector)}) don't match expected ({expected_dimensions})"
+            }
+        
+        # Check for invalid values
+        try:
+            for i, val in enumerate(vector):
+                if not isinstance(val, (int, float)):
+                    return {"valid": False, "message": f"Vector element {i} is not a number"}
+                if not isinstance(val, (int, float)) or val != val:  # NaN check
+                    return {"valid": False, "message": f"Vector element {i} is NaN"}
+                if val == float('inf') or val == float('-inf'):
+                    return {"valid": False, "message": f"Vector element {i} is infinite"}
+        except Exception as e:
+            return {"valid": False, "message": f"Vector validation error: {str(e)}"}
+        
+        # Send validation request to MCP server
+        mcp_params = {
+            "vector": vector,
+            "collection_name": self.module.config.collection_name
+        }
+        
+        if expected_dimensions:
+            mcp_params["expected_dimensions"] = expected_dimensions
+        
+        try:
+            response = await self.send_request("vector.validate", mcp_params)
+            return response.result
+        except Exception:
+            # Fallback to local validation if MCP server doesn't support validation
+            return {"valid": True, "message": "Vector passed local validation"}

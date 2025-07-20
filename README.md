@@ -69,6 +69,7 @@ The MCP-RAG-Control architecture consists of the following main components:
             ORDER BY vector_distance_cosine(embedding, query_embedding) DESC -- Sorted by similarity to query vector
             LIMIT 5;
             ```
+        * **Vector Database via MCP**: Queries connected vector database (e.g., FAISS, Pinecone) through MCP interface for semantic similarity search
         * Retrieves a set of records containing the most relevant and recent product information (product name, release date, description, etc.).
     4. **Information Augmentation:** Organizes the retrieved product information into a structured format (e.g., JSON, Markdown) to create context for the LLM prompt.
         ```markdown
@@ -130,10 +131,12 @@ The MCP-RAG-Control architecture consists of the following main components:
 
 ## Key Technical Components
 
-### FAISS (Facebook AI Similarity Search)
-- An open-source library for efficient similarity search and clustering of high-density vectors
-- Used as a vector store in RAG to store vector embeddings of documents or text fragments
-- Designed to handle large-scale datasets
+### Vector Database Integration via MCP
+- **Unified Interface**: All vector databases (FAISS, Pinecone, Weaviate, Chroma, etc.) integrate through standardized MCP protocol
+- **Scalable Architecture**: Any vector database can be connected as an MCP server without code changes to the core system
+- **Standard Operations**: Search, add, delete, update, and validate operations through consistent MCP interface
+- **Performance Optimization**: Efficient similarity search and clustering for high-density vectors
+- **Enterprise Ready**: Supports large-scale datasets with distributed vector storage
 
 ### LangGraph
 - A framework for managing complex workflows in agent RAG systems

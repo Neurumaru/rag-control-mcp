@@ -187,6 +187,148 @@ def log_performance_metric(
     )
 
 
+def log_langgraph_node_execution(
+    node_name: str,
+    execution_time_ms: float,
+    success: bool,
+    input_data: Optional[Dict[str, Any]] = None,
+    output_data: Optional[Dict[str, Any]] = None,
+    error: Optional[str] = None,
+    checkpoint_id: Optional[str] = None
+) -> None:
+    """Log LangGraph node execution details.
+    
+    Args:
+        node_name: Name of the executed node
+        execution_time_ms: Execution time in milliseconds
+        success: Whether execution was successful
+        input_data: Input data (sanitized)
+        output_data: Output data (sanitized)
+        error: Error message if failed
+        checkpoint_id: Associated checkpoint ID
+    """
+    log_data = {
+        "event_type": "langgraph_node_execution",
+        "node_name": node_name,
+        "execution_time_ms": execution_time_ms,
+        "success": success,
+        "checkpoint_id": checkpoint_id
+    }
+    
+    if input_data:
+        log_data["input_size"] = len(str(input_data))
+    if output_data:
+        log_data["output_size"] = len(str(output_data))
+    if error:
+        log_data["error"] = error
+    
+    if success:
+        logger.info("LangGraph node executed successfully", **log_data)
+    else:
+        logger.error("LangGraph node execution failed", **log_data)
+
+
+def log_langgraph_checkpoint_event(
+    event_type: str,  # "created", "restored", "failed"
+    checkpoint_id: str,
+    node_name: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None
+) -> None:
+    """Log LangGraph checkpoint events.
+    
+    Args:
+        event_type: Type of checkpoint event
+        checkpoint_id: Checkpoint identifier
+        node_name: Associated node name
+        metadata: Additional checkpoint metadata
+    """
+    log_data = {
+        "event_type": f"langgraph_checkpoint_{event_type}",
+        "checkpoint_id": checkpoint_id,
+        "node_name": node_name,
+        "metadata": metadata or {}
+    }
+    
+    logger.info(f"LangGraph checkpoint {event_type}", **log_data)
+
+
+def log_langgraph_state_transition(
+    from_node: str,
+    to_node: str,
+    thread_id: str,
+    state_size: int,
+    condition: Optional[str] = None
+) -> None:
+    """Log LangGraph state transitions between nodes.
+    
+    Args:
+        from_node: Source node name
+        to_node: Target node name
+        thread_id: Thread ID
+        state_size: Size of the state being transferred
+        condition: Condition that triggered the transition
+    """
+    logger.debug(
+        f"LangGraph state transition: {from_node} -> {to_node}",
+        extra={
+            "langgraph_event": "state_transition",
+            "from_node": from_node,
+            "to_node": to_node,
+            "thread_id": thread_id,
+            "state_size": state_size,
+            "condition": condition
+        }
+    )
+
+
+def log_langgraph_retry_attempt(
+    node_name: str,
+    thread_id: str,
+    attempt_number: int,
+    max_attempts: int,
+    error: Exception,
+    retry_delay_ms: float
+) -> None:
+    """Log LangGraph retry attempts for failed node executions.
+    
+    Args:
+        node_name: Name of the node being retried
+        thread_id: Thread ID
+        attempt_number: Current attempt number
+        max_attempts: Maximum retry attempts
+        error: Error that caused the retry
+        retry_delay_ms: Delay before next retry in milliseconds
+    """
+    logger.warning(
+        f"LangGraph retry attempt {attempt_number}/{max_attempts} for node: {node_name}",
+        extra={
+            "langgraph_event": "retry_attempt",
+            "node_name": node_name,
+            "thread_id": thread_id,
+            "attempt_number": attempt_number,
+            "max_attempts": max_attempts,
+            "error": str(error),
+            "error_type": type(error).__name__,
+            "retry_delay_ms": retry_delay_ms
+        }
+    )
+
+
+def create_langgraph_logger(thread_id: str) -> Any:
+    """Create a thread-specific logger for LangGraph operations.
+    
+    Args:
+        thread_id: Thread ID to bind to the logger
+        
+    Returns:
+        Logger instance bound with thread_id
+    """
+    return logger.bind(
+        langgraph_thread_id=thread_id,
+        component="langgraph"
+    )
+
+
 # Initialize logging on module import with environment-based configuration
 def _init_logging_from_env():
     """Initialize logging from environment variables."""

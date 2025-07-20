@@ -191,3 +191,49 @@ class StreamResponse(BaseModel):
             datetime: lambda v: v.isoformat(),
             UUID: lambda v: str(v)
         }
+
+
+# Additional API Models
+class ErrorResponse(BaseModel):
+    """Error response model."""
+    error: str = Field(..., description="Error type")
+    message: str = Field(..., description="Error message")
+    details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
+    timestamp: str = Field(..., description="Error timestamp")
+
+
+class SuccessResponse(BaseModel):
+    """Success response model."""
+    message: str = Field(..., description="Success message")
+    data: Optional[Dict[str, Any]] = Field(None, description="Response data")
+    timestamp: str = Field(..., description="Response timestamp")
+
+
+class PaginationParams(BaseModel):
+    """Pagination parameters."""
+    page: int = Field(default=1, ge=1, description="Page number")
+    page_size: int = Field(default=10, ge=1, le=100, description="Number of items per page")
+
+
+class FilterParams(BaseModel):
+    """Filter parameters."""
+    module_type: Optional[str] = Field(None, description="Filter by module type")
+    status: Optional[str] = Field(None, description="Filter by status")
+    search: Optional[str] = Field(None, description="Search term")
+
+
+class SortParams(BaseModel):
+    """Sort parameters."""
+    sort_by: str = Field(default="created_at", description="Field to sort by")
+    sort_order: str = Field(default="desc", description="Sort order (asc/desc)")
+
+
+# Simple health check response for basic API endpoint
+class HealthCheckResponse(BaseModel):
+    """Simple health check response."""
+    status: str = Field(default="healthy", description="System health status")
+    timestamp: str = Field(..., description="Current timestamp")
+    version: str = Field(default="0.1.0", description="Application version")
+    uptime: float = Field(..., description="System uptime in seconds")
+    modules_count: int = Field(default=0, description="Number of registered modules")
+    pipelines_count: int = Field(default=0, description="Number of registered pipelines")

@@ -58,101 +58,179 @@ async def list_modules(
     pagination: PaginationParams = Depends(),
     filters: FilterParams = Depends()
 ):
-    modules_list = list(modules_store.values())
-    
-    if filters.module_type:
-        modules_list = [m for m in modules_list if m.type == filters.module_type]
-    
-    if filters.status:
-        modules_list = [m for m in modules_list if m.status == filters.status]
-    
-    if filters.search:
-        search_term = filters.search.lower()
-        modules_list = [
-            m for m in modules_list
-            if search_term in m.name.lower() or
-               (m.description and search_term in m.description.lower())
-        ]
-    
-    total = len(modules_list)
-    start = (pagination.page - 1) * pagination.page_size
-    end = start + pagination.page_size
-    paginated_modules = modules_list[start:end]
-    
-    return ModuleListResponse(
-        modules=paginated_modules,
-        total=total,
-        message=f"Retrieved {len(paginated_modules)} modules"
-    )
+    try:
+        # Get modules from registry
+        modules_list = registry.list_modules()
+        
+        # Apply filters
+        if filters.module_type:
+            modules_list = [m for m in modules_list if m.module_type == filters.module_type]
+        
+        if filters.status:
+            modules_list = [m for m in modules_list if m.status == filters.status]
+        
+        if filters.search:
+            search_term = filters.search.lower()
+            modules_list = [
+                m for m in modules_list
+                if search_term in m.name.lower() or
+                   (m.description and search_term in m.description.lower())
+            ]
+        
+        # Apply pagination
+        total = len(modules_list)
+        start = (pagination.page - 1) * pagination.page_size
+        end = start + pagination.page_size
+        paginated_modules = modules_list[start:end]
+        
+        logger.info(f"Listed {len(paginated_modules)} modules (total: {total})")
+        
+        return ModuleListResponse(
+            modules=paginated_modules,
+            total=total,
+            message=f"Retrieved {len(paginated_modules)} modules"
+        )
+    except Exception as e:
+        logger.error(f"Failed to list modules: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/modules/{module_id}", response_model=ModuleResponse)
 async def get_module(module_id: str):
-    if module_id not in modules_store:
-        raise HTTPException(status_code=404, detail="Module not found")
-    
-    module = modules_store[module_id]
-    return ModuleResponse(
-        module=module,
-        message="Module retrieved successfully"
-    )
+    try:
+        module_uuid = UUID(module_id)
+        module = await registry.get_module(module_uuid)
+        
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
+        
+        logger.info(f"Retrieved module '{module.name}' with ID {module_id}")
+        
+        return ModuleResponse(
+            module=module,
+            message="Module retrieved successfully"
+        )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid module ID format")
+    except Exception as e:
+        logger.error(f"Failed to get module {module_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/modules/{module_id}", response_model=ModuleResponse)
 async def update_module(module_id: str, request: ModuleUpdateRequest):
-    if module_id not in modules_store:
-        raise HTTPException(status_code=404, detail="Module not found")
-    
-    module = modules_store[module_id]
-    
-    update_data = request.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(module, field, value)
-    
-    modules_store[module_id] = module
-    
-    return ModuleResponse(
-        module=module,
-        message="Module updated successfully"
-    )
+    try:
+        module_uuid = UUID(module_id)
+        
+        # Convert string dependency IDs to UUIDs if provided
+        dependencies = None
+        if request.dependencies is not None:
+            dependencies = [UUID(dep_id) for dep_id in request.dependencies]
+        
+        updated_module = await registry.update_module(
+            module_uuid,
+            name=request.name,
+            description=request.description,
+            version=request.version,
+            status=request.status,
+            config=request.config,
+            input_schema=request.input_schema,
+            output_schema=request.output_schema,
+            supported_operations=request.supported_operations,
+            dependencies=dependencies,
+            tags=request.tags
+        )
+        
+        if not updated_module:
+            raise HTTPException(status_code=404, detail="Module not found")
+        
+        logger.info(f"Updated module '{updated_module.name}' with ID {module_id}")
+        
+        return ModuleResponse(
+            module=updated_module,
+            message="Module updated successfully"
+        )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid module ID format")
+    except Exception as e:
+        logger.error(f"Failed to update module {module_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/modules/{module_id}")
 async def delete_module(module_id: str):
-    if module_id not in modules_store:
-        raise HTTPException(status_code=404, detail="Module not found")
-    
-    module = modules_store.pop(module_id)
-    
-    return {
-        "message": f"Module '{module.name}' deleted successfully",
-        "timestamp": datetime.now().isoformat()
-    }
+    try:
+        module_uuid = UUID(module_id)
+        
+        # Get module name before deletion for logging
+        module = await registry.get_module(module_uuid)
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
+        
+        success = await registry.delete_module(module_uuid)
+        if not success:
+            raise HTTPException(status_code=404, detail="Module not found")
+        
+        logger.info(f"Deleted module '{module.name}' with ID {module_id}")
+        
+        return {
+            "message": f"Module '{module.name}' deleted successfully",
+            "timestamp": datetime.now().isoformat()
+        }
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid module ID format")
+    except Exception as e:
+        logger.error(f"Failed to delete module {module_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/modules/{module_id}/activate")
 async def activate_module(module_id: str):
-    if module_id not in modules_store:
-        raise HTTPException(status_code=404, detail="Module not found")
-    
-    module = modules_store[module_id]
-    module.status = ModuleStatus.ACTIVE
-    
-    return {
-        "message": f"Module '{module.name}' activated successfully",
-        "timestamp": datetime.now().isoformat()
-    }
+    try:
+        module_uuid = UUID(module_id)
+        
+        updated_module = await registry.update_module(
+            module_uuid,
+            status=ModuleStatus.ACTIVE
+        )
+        
+        if not updated_module:
+            raise HTTPException(status_code=404, detail="Module not found")
+        
+        logger.info(f"Activated module '{updated_module.name}' with ID {module_id}")
+        
+        return {
+            "message": f"Module '{updated_module.name}' activated successfully",
+            "timestamp": datetime.now().isoformat()
+        }
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid module ID format")
+    except Exception as e:
+        logger.error(f"Failed to activate module {module_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/modules/{module_id}/deactivate")
 async def deactivate_module(module_id: str):
-    if module_id not in modules_store:
-        raise HTTPException(status_code=404, detail="Module not found")
-    
-    module = modules_store[module_id]
-    module.status = ModuleStatus.INACTIVE
-    
-    return {
-        "message": f"Module '{module.name}' deactivated successfully",
-        "timestamp": datetime.now().isoformat()
-    }
+    try:
+        module_uuid = UUID(module_id)
+        
+        updated_module = await registry.update_module(
+            module_uuid,
+            status=ModuleStatus.INACTIVE
+        )
+        
+        if not updated_module:
+            raise HTTPException(status_code=404, detail="Module not found")
+        
+        logger.info(f"Deactivated module '{updated_module.name}' with ID {module_id}")
+        
+        return {
+            "message": f"Module '{updated_module.name}' deactivated successfully",
+            "timestamp": datetime.now().isoformat()
+        }
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid module ID format")
+    except Exception as e:
+        logger.error(f"Failed to deactivate module {module_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -228,6 +228,26 @@ class SortParams(BaseModel):
     sort_order: str = Field(default="desc", description="Sort order (asc/desc)")
 
 
+# Query execution models
+class QueryRequest(BaseModel):
+    """Request for query execution."""
+    query: str = Field(..., description="The user's query")
+    pipeline_id: Optional[str] = Field(None, description="Specific pipeline to use")
+    context: Dict[str, Any] = Field(default_factory=dict, description="Additional context")
+    parameters: Dict[str, Any] = Field(default_factory=dict, description="Query parameters")
+
+
+class QueryResponse(BaseModel):
+    """Response from query execution."""
+    query: str = Field(..., description="The original query")
+    response: str = Field(..., description="The generated response")
+    pipeline_id: str = Field(..., description="ID of the pipeline used")
+    execution_id: str = Field(..., description="ID of the execution")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Execution metadata")
+    sources: List[Dict[str, Any]] = Field(default_factory=list, description="Retrieved sources")
+    execution_time: Optional[float] = Field(None, description="Execution time in seconds")
+
+
 # Simple health check response for basic API endpoint
 class HealthCheckResponse(BaseModel):
     """Simple health check response."""

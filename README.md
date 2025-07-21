@@ -26,10 +26,10 @@ MCP-RAG-Control is a next-generation RAG (Retrieval-Augmented Generation) contro
   - ✅ Structured logging system
   - ✅ Configuration management and validation
 
-### 🔄 Currently in Development (Tier 2)
-- **Agent D**: MCP Adapter System (Vector DB integration)
-- **Agent E**: Registry Storage System (Module/Pipeline management)
-- **Agent F**: Test Framework (Integration testing)
+### 🔄 Next Phase (Phase 2)
+- **MCP Adapter System**: Enhanced vector database integration
+- **Registry Storage System**: Complete module/pipeline management
+- **Comprehensive Test Framework**: Extended from current 35 tests
 
 ## 🏗️ System Architecture
 
@@ -235,21 +235,21 @@ logger = create_langgraph_logger("my-thread-id")
 
 ### Next Steps (Tier 2-5)
 
-#### Tier 2 (Core Components)
-- **Agent D**: Complete MCP Adapter System
-- **Agent E**: Implement Registry Storage System
-- **Agent F**: Comprehensive Test Framework
+#### Phase 2 (Core Systems)
+- **MCP Adapter System**: Complete vector database integration
+- **Registry Storage System**: Full module/pipeline management
+- **Test Framework**: Comprehensive testing infrastructure
 
-#### Tier 3 (Integration System)
-- **Agent G**: LangGraph-based Central Controller
+#### Phase 3 (Integration & Control)
+- **LangGraph Controller**: Central workflow orchestration
 
-#### Tier 4 (Interfaces)
-- **Agent H**: FastAPI Backend Implementation
-- **Agent I**: Streamlit Web Interface
+#### Phase 4 (User Interfaces)
+- **FastAPI Backend**: REST API implementation
+- **Streamlit Web Interface**: User-friendly dashboard
 
-#### Tier 5 (Completion)
-- **Agent J**: Examples and Demo Implementation
-- **Agent K**: Deployment and Operations System
+#### Phase 5 (Completion & Deployment)
+- **Examples & Demos**: Usage examples and tutorials
+- **Deployment System**: Production-ready deployment
 
 ### 🤝 Contributing
 

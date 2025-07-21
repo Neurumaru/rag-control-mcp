@@ -1,53 +1,140 @@
-# MCP-RAG-Control Project Description
+# MCP-RAG-Control
 
-## Project Overview
-MCP-RAG-Control is a map-based control architecture for agent-based RAG (Retrieval-Augmented Generation) systems. This system is designed to efficiently manage and control complex information retrieval and generation processes.
+## 🚀 Project Overview
 
-## Architecture Components
+MCP-RAG-Control is a next-generation RAG (Retrieval-Augmented Generation) control system using **data flow-based architecture**. It integrates **LangGraph** and **MCP (Model Context Protocol)** to build scalable and modular RAG pipelines.
 
-The MCP-RAG-Control architecture consists of the following main components:
+### ✨ Key Features
+- 🔄 **Data Flow-based ModuleType**: 37 specialized module types
+- 🌐 **MCP Standard Integration**: Connect all external systems through standardized interfaces
+- 🎯 **LangGraph Compatible**: Complex workflow orchestration
+- 🧪 **Full Test Coverage**: 35 tests passing with 45% coverage
+- 🏗️ **Modular Architecture**: Independent and reusable components
 
-### API Interface
-- Provides RESTful API for interactions with users or external systems
-- Offers endpoints for module registration, pipeline configuration, and query execution
+## 📊 Development Status (January 2025)
 
-### Controller
-- Acts as the central control unit coordinating all requests and flows
-- Based on LangGraph for managing and executing complex workflows
-- Controls communication between modules and data flow
+### ✅ Completed Components (Tier 1)
+- **Agent A (Project Infrastructure)**: 60% Complete
+  - ✅ pyproject.toml and project structure
+  - ⏳ CI/CD, Docker setup (planned)
+- **Agent B (Data Models)**: 100% Complete
+  - ✅ 37 data flow-based ModuleTypes
+  - ✅ Pydantic V2 models and validation
+  - ✅ LangGraph compatible schemas
+- **Agent C (Core Utilities)**: 100% Complete
+  - ✅ LangGraph Config & Factory
+  - ✅ Structured logging system
+  - ✅ Configuration management and validation
 
-### Module Registry
-- Manages various modules such as data sources, vector stores, embedding models
-- Stores metadata and configuration information for MCP-compatible modules
+### 🔄 Currently in Development (Tier 2)
+- **Agent D**: MCP Adapter System (Vector DB integration)
+- **Agent E**: Registry Storage System (Module/Pipeline management)
+- **Agent F**: Test Framework (Integration testing)
 
-### Pipeline Registry
-- Stores configuration information for user-defined RAG pipelines
-- Defines module connection methods, data flow, and execution sequence
+## 🏗️ System Architecture
 
-### MCP Adapters
-- Standardized communication interfaces with various external systems
-- Supports customized MCP implementations for different data sources
+### Core Components
 
-## Component Interaction Flow
+#### 📡 **MCP Adapter Layer**
+- **Vector Databases**: FAISS, Pinecone, Weaviate, Chroma
+- **Standard MCP Interface**: Connect all external systems through unified interface
+- **Auto Health Checks**: Connection monitoring and recovery
 
-### Module Registration
+#### 🎛️ **LangGraph Controller** (Planned)
+- **Workflow Orchestration**: Execute complex RAG pipelines
+- **State Management**: Checkpoint-based stable execution
+- **Error Handling**: Automatic retry and recovery logic
 
-1. **User Request:** The user registers a module via the API (by calling the `/modules` endpoint).
-2. **Controller Processing:** The controller receives and processes the module registration request.
-3. **Module Registration:** The module registration request is stored in the module registry, and the list of registered modules is returned.
+#### 🗄️ **Registry Storage**
+- **Module Registry**: Manage modules based on 37 ModuleTypes
+- **Pipeline Registry**: User-defined RAG pipelines
+- **Dependency Management**: Automatic module dependency validation
 
-### Pipeline Registration
+#### 🌐 **FastAPI Backend** (Planned)
+- **RESTful API**: Module/Pipeline CRUD operations
+- **Execution Engine**: Pipeline execution and monitoring
+- **Auto Documentation**: OpenAPI/Swagger support
 
-1. **User Request:** The user registers a pipeline via the API (by calling the `/pipelines` endpoint).
-2. **Controller Processing:** The controller receives and processes the pipeline registration request.
-3. **Pipeline Registration:** The pipeline registration request is stored in the pipeline registry, and the list of registered pipelines is returned.
+#### 🖥️ **Streamlit Web Interface** (Planned)
+- **Dashboard**: Real-time system status monitoring
+- **Pipeline Builder**: Drag & drop pipeline configuration
+- **RAG Testing**: Interactive Q&A testing
 
-### Pipeline Execution
+### 🔄 Data Flow Pattern
 
-1. **User Request:** The user submits a question via the API (by calling the `/execute` endpoint).
-2. **Query Processing:** The controller analyzes the user's question and identifies the appropriate pipeline.
-3. **Pipeline Execution:** The controller finds and sequentially executes the necessary modules for pipeline execution.
-4. **Response Return:** The final generated response is delivered to the user through the API interface.
+```
+User Query → Text Processing → Embedding → Vector Search → Document Search → Context Building → LLM Generation → Response
+   TEXT    →     TEXT       → EMBEDDINGS →   VECTORS   →  DOCUMENTS  →   CONTEXT    →  RESPONSE
+```
+
+#### Key ModuleType Examples:
+- **TEXT_PREPROCESSOR**: Text cleaning and chunking
+- **EMBEDDING_ENCODER**: Convert text to vectors
+- **VECTOR_STORE**: Vector database integration
+- **SIMILARITY_SEARCH**: Semantic similarity search
+- **CONTEXT_BUILDER**: RAG context construction
+- **LLM_GENERATOR**: Language model-based generation
+
+## 🚀 Quick Start
+
+### Installation and Setup
+
+```bash
+# Clone the project
+git clone https://github.com/your-repo/mcp-rag-control.git
+cd mcp-rag-control
+
+# Install dependencies using UV
+uv sync
+
+# Install in development mode
+uv pip install -e .
+
+# Run tests
+uv run pytest
+```
+
+### Currently Available Features
+
+#### 1. Module System
+```python
+from mcp_rag_control.models import Module, ModuleType, ModuleConfig
+
+# Create a vector store module
+module = Module(
+    name="my_vector_store",
+    module_type=ModuleType.VECTOR_STORE,
+    mcp_server_url="https://my-vector-db.com/mcp",
+    config=ModuleConfig(dimension=512, metric="cosine")
+)
+```
+
+#### 2. MCP Adapter Usage
+```python
+from mcp_rag_control.adapters import VectorAdapter
+
+# Search through vector adapter
+result = await adapter.execute_operation("search", {
+    "query_vector": [0.1, 0.2, ...],
+    "top_k": 10,
+    "threshold": 0.7
+})
+```
+
+#### 3. LangGraph Integration
+```python
+from mcp_rag_control.utils import LangGraphConfig, create_langgraph_logger
+
+# LangGraph configuration
+config = LangGraphConfig(
+    checkpointer_type="memory",
+    recursion_limit=25,
+    enable_stream=True
+)
+
+# LangGraph-specific logger
+logger = create_langgraph_logger("my-thread-id")
+```
 
 ## Key Technical Terms
 
@@ -143,3 +230,42 @@ The MCP-RAG-Control architecture consists of the following main components:
 - Acts as a central coordinator determining the control flow of RAG systems
 - Supports feedback loops and agent behaviors
 - Connects retrieval components, memory systems, and language generation modules
+
+## 📋 Development Roadmap
+
+### Next Steps (Tier 2-5)
+
+#### Tier 2 (Core Components)
+- **Agent D**: Complete MCP Adapter System
+- **Agent E**: Implement Registry Storage System
+- **Agent F**: Comprehensive Test Framework
+
+#### Tier 3 (Integration System)
+- **Agent G**: LangGraph-based Central Controller
+
+#### Tier 4 (Interfaces)
+- **Agent H**: FastAPI Backend Implementation
+- **Agent I**: Streamlit Web Interface
+
+#### Tier 5 (Completion)
+- **Agent J**: Examples and Demo Implementation
+- **Agent K**: Deployment and Operations System
+
+### 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### 📝 License
+
+This project is licensed under the MIT License.
+
+### 🔗 Related Links
+
+- [LangGraph Documentation](https://python.langchain.com/docs/langgraph/)
+- [MCP Standard](https://modelcontextprotocol.io/)
+- [Project Documentation](/docs/index.md)
+- [Development Guide](/TODOs.md)

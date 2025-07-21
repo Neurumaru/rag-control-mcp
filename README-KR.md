@@ -128,15 +128,56 @@ MCP-RAG-Control 아키텍처는 다음과 같은 주요 컴포넌트로 구성�
             ```
     5.  **컨텍스트 통합 및 생성:** 컨트롤러는 MCP를 통해 수신된 두 종류의 데이터(수익률 시계열, 뉴스 기사 목록)를 확인하고, 이를 하나의 통합된 컨텍스트로 구성하여 LLM에 전달합니다. LLM은 이를 바탕으로 종합적인 답변을 생성합니다.
 
-## 주요 기술 컴포넌트
+## 🔧 주요 기술 컴포넌트
 
-### FAISS (Facebook AI Similarity Search)
-- 고밀도 벡터의 효율적인 유사성 검색 및 클러스터링을 위한 오픈소스 라이브러리
-- RAG에서 문서나 텍스트 조각의 벡터 임베딩을 저장하는 벡터 저장소로 사용
-- 대규모 데이터셋을 처리할 수 있도록 설계됨
+### Vector Database MCP 통합
+- **통합 인터페이스**: 모든 벡터 데이터베이스(FAISS, Pinecone, Weaviate, Chroma 등)를 표준 MCP 프로토콜로 통합
+- **확장 가능한 아키텍처**: 코어 시스템 변경 없이 MCP 서버로 연결 가능
+- **표준 작업**: 일관된 MCP 인터페이스를 통한 검색, 추가, 삭제, 업데이트, 검증 작업
+- **성능 최적화**: 고밀도 벡터를 위한 효율적인 유사도 검색 및 클러스터링
+- **엔터프라이즈 대응**: 분산 벡터 저장소로 대규모 데이터셋 지원
 
 ### LangGraph
 - 에이전트 RAG 시스템의 복잡한 워크플로우를 관리하는 프레임워크
 - 중앙 조정자 역할을 하며 RAG 시스템의 제어 흐름 결정
 - 피드백 루프와 에이전트 동작 지원
 - 검색 컴포넌트, 메모리 시스템, 언어 생성 모듈 간의 연결 역할
+
+## 📋 개발 로드맵
+
+### 다음 단계 (Tier 2-5)
+
+#### Tier 2 (핵심 컴포넌트)
+- **Agent D**: MCP 어댑터 시스템 완성
+- **Agent E**: 등록 저장소 시스템 구현
+- **Agent F**: 종합적인 테스트 프레임워크
+
+#### Tier 3 (통합 시스템)
+- **Agent G**: LangGraph 기반 중앙 컨트롤러
+
+#### Tier 4 (인터페이스)
+- **Agent H**: FastAPI 백엔드 구현
+- **Agent I**: Streamlit 웹 인터페이스
+
+#### Tier 5 (완성)
+- **Agent J**: 예제 및 데모 구현
+- **Agent K**: 배포 및 운영 시스템
+
+### 🤝 기여 방법
+
+1. 저장소 포크
+2. 기능 브랜치 생성 (`git checkout -b feature/amazing-feature`)
+3. 변경 사항 커밋 (`git commit -m 'Add amazing feature'`)
+4. 브랜치 푸시 (`git push origin feature/amazing-feature`)
+5. Pull Request 오픈
+
+### 📝 라이센스
+
+이 프로젝트는 MIT 라이센스 하에 배포됩니다.
+
+### 🔗 관련 링크
+
+- [LangGraph 문서](https://python.langchain.com/docs/langgraph/)
+- [MCP 표준](https://modelcontextprotocol.io/)
+- [프로젝트 문서](/docs/index.md)
+- [개발 가이드](/TODOs.md)

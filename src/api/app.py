@@ -1,19 +1,22 @@
+import time
+from datetime import datetime
+from typing import Any, Dict
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import time
-from datetime import datetime
-from typing import Dict, Any
 
-from ..models.request import HealthCheckResponse, ErrorResponse
-from ..utils.logger import get_logger
+from ..models.request import ErrorResponse, HealthCheckResponse
 from ..registry.module_registry import ModuleRegistry
 from ..registry.pipeline_registry import PipelineRegistry
-from .routes import modules, pipelines, execute
+from ..utils.logger import get_logger
 from .middleware.security import (
-    RateLimitMiddleware, SecurityHeadersMiddleware, 
-    RequestLoggingMiddleware, RequestSizeMiddleware
+    RateLimitMiddleware,
+    RequestLoggingMiddleware,
+    RequestSizeMiddleware,
+    SecurityHeadersMiddleware,
 )
+from .routes import execute, modules, pipelines
 
 logger = get_logger(__name__)
 module_registry = ModuleRegistry()
@@ -24,7 +27,7 @@ app = FastAPI(
     description="Map-based control architecture for agent-based RAG systems",
     version="0.1.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 # Add security middleware
@@ -55,8 +58,8 @@ async def http_exception_handler(request, exc):
         content=ErrorResponse(
             error=f"HTTP {exc.status_code}",
             message=exc.detail,
-            timestamp=datetime.now().isoformat()
-        ).dict()
+            timestamp=datetime.now().isoformat(),
+        ).dict(),
     )
 
 
@@ -67,8 +70,8 @@ async def general_exception_handler(request, exc):
         content=ErrorResponse(
             error="Internal Server Error",
             message=str(exc),
-            timestamp=datetime.now().isoformat()
-        ).dict()
+            timestamp=datetime.now().isoformat(),
+        ).dict(),
     )
 
 
@@ -78,23 +81,23 @@ async def root():
         "message": "MCP-RAG-Control API",
         "version": "0.1.0",
         "documentation": "/docs",
-        "health": "/health"
+        "health": "/health",
     }
 
 
 @app.get("/health", response_model=HealthCheckResponse)
 async def health_check():
     uptime = time.time() - start_time
-    
+
     # Get registry statistics
     module_stats = module_registry.get_stats()
     pipeline_stats = pipeline_registry.get_pipeline_stats()
-    
+
     return HealthCheckResponse(
         status="healthy",
         timestamp=datetime.now().isoformat(),
         version="0.1.0",
         uptime=uptime,
         modules_count=module_stats["total_modules"],
-        pipelines_count=pipeline_stats["total_pipelines"]
+        pipelines_count=pipeline_stats["total_pipelines"],
     )

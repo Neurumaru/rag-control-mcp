@@ -1,10 +1,15 @@
 """RAG 시스템의 새로운 ModuleType 사용 예시들"""
 
+# Add src to path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+
 from uuid import uuid4
-from mcp_rag_control.models.module import (
+from models.module import (
     Module, ModuleType, ModuleConfig, DataType, DataSchema, ModuleCapabilities
 )
-from mcp_rag_control.models.data_flow_schemas import ModuleSchemaRegistry, RAGDataFlowPatterns
+from models.data_flow_schemas import ModuleSchemaRegistry, RAGDataFlowPatterns
 
 
 def create_text_preprocessor_module():

@@ -68,7 +68,7 @@ def start_api_server(args):
     
     try:
         uvicorn.run(
-            "mcp_rag_control.api.app:app",
+            "api.app:app",
             host=args.host,
             port=args.port,
             reload=args.reload,

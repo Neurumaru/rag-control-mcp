@@ -9,16 +9,21 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langchain.chat_models import init_chat_model
 
+# Add src to path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+
 # Import our enhanced utilities
-from mcp_rag_control.utils.config import get_config, set_config, AppConfig, LangGraphConfig
-from mcp_rag_control.utils.logger import (
+from utils.config import get_config, set_config, AppConfig, LangGraphConfig
+from utils.logger import (
     setup_logging, 
     LoggerConfig,
     log_langgraph_node_execution,
     log_langgraph_state_transition,
     create_langgraph_logger
 )
-from mcp_rag_control.utils.langgraph_factory import (
+from utils.langgraph_factory import (
     LangGraphCheckpointerFactory,
     LangGraphConfigManager,
     LangGraphMonitor,

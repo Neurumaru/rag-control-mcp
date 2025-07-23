@@ -172,3 +172,22 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Project specific
+*.db
+*.sqlite
+data/backups/
+logs/
+.DS_Store
+.vscode/
+*.tmp
+*.bak
+*.swp
+*~
+
+# MCP-RAG-Control specific
+data/modules_backup.json
+data/pipelines_backup.json
+data/test_data/
+temp/
+.streamlit/
